@@ -54,6 +54,8 @@ fn populate_db(anime_jsonl: &PathBuf, conn: &Connection) -> Result<(), Box<dyn E
 
     jsonl_lines.next(); // skips the first line with next bc its metadata line
 
+    // TODO: use transactions and maybe prepare cached
+
     for i in jsonl_lines {
         let line = i?;
         let anime_entry: AnimeEntry = serde_json::from_str(line.as_str())?;
