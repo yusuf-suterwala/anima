@@ -1,0 +1,9 @@
+BEGIN;
+CREATE TABLE Anime(
+    mal_id INTEGER UNSIGNED PRIMARY KEY,
+    title TEXT NOT NULL,
+    episodes INTEGER UNSIGNED NOT NULL
+);
+
+CREATE INDEX AnimeTitleIDX ON Anime(title);
+COMMIT;
