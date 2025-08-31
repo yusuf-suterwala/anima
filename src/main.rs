@@ -23,7 +23,7 @@ fn download_jsonl(output_filename: &PathBuf) -> Result<(), Box<dyn Error>> {
         "https://github.com/manami-project/anime-offline-database/releases/download/latest/anime-offline-database.jsonl.zst",
     ).call()?.into_body().into_reader();
 
-    println!("downloading database...");
+    println!("downloading database jsonl...");
 
     io::copy(&mut http_file_reader, &mut compressed_database)?;
 
@@ -34,19 +34,23 @@ fn extract_jsonl(compressed_filename: &PathBuf, uncompressed_filename: &PathBuf)
     let compressed_file = File::open(compressed_filename)?;
     let uncompressed_file = File::create_new(uncompressed_filename)?;
 
+    println!("extracting database jsonl...");
+
     zstd::stream::copy_decode(compressed_file, uncompressed_file)?;
 
     Ok(())
 }
 
 fn setup_db(conn: &Connection) -> rusqlite::Result<()> {
+    println!("setting up database...");
     let _ = conn.execute_batch(include_str!("./sql/anime_schema.sql"))?;
     let _ = conn.execute_batch(include_str!("./sql/alt_title_schema.sql"))?;
 
     Ok(())
 }
 
-fn populate_db(anime_jsonl: &PathBuf, conn: &Connection) -> Result<(), Box<dyn Error>> {
+fn populate_db(anime_jsonl: &PathBuf, conn: &mut Connection) -> Result<(), Box<dyn Error>> {
+    println!("populating database...");
     let uncompressed_file = File::open(anime_jsonl)?;
     let uncompressed_filebuf = BufReader::new(uncompressed_file);
 
@@ -54,13 +58,47 @@ fn populate_db(anime_jsonl: &PathBuf, conn: &Connection) -> Result<(), Box<dyn E
 
     jsonl_lines.next(); // skips the first line with next bc its metadata line
 
-    // TODO: use transactions and maybe prepare cached
+    // TODO: - find a way to use prepare and transactions without a brrowing error
+    //       - maybe prosess the alt titles so there are no duplecates
+
+    let mut total_anime_added = 0;
+
+    let tx = conn.transaction()?;
 
     for i in jsonl_lines {
         let line = i?;
         let anime_entry: AnimeEntry = serde_json::from_str(line.as_str())?;
-        conn.execute("", ())
+        let maybe_mal_url = anime_entry
+            .sources
+            .iter()
+            .find(|i| i.starts_with("https://myanimelist.net"));
+
+        if let Some(mal_url) = maybe_mal_url {
+            let mal_id_str = mal_url.split("/").last().unwrap();
+            let mal_id: u32 = mal_id_str.parse()?;
+
+            tx.execute(
+                "INSERT INTO Anime (mal_id, title, episodes) VALUES (?1, ?2, ?3)",
+                (mal_id, anime_entry.title, anime_entry.episodes),
+            )?;
+
+            for title in anime_entry.synonyms {
+                tx.execute(
+                    "INSERT INTO AnimeAltTitle (alt_title, associated_mal_id) VALUES (?1, ?2)",
+                    (title, mal_id),
+                )?;
+            }
+
+            total_anime_added += 1;
+        } else {
+            continue;
+        }
     }
+
+    tx.commit()?;
+
+    println!("total anime added: {total_anime_added}");
+
     Ok(())
 }
 
@@ -79,9 +117,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     download_jsonl(&compressed_jsonlpath)?;
     extract_jsonl(&compressed_jsonlpath, &uncompressed_jsonpath)?;
 
-    let conn = Connection::open(anidb_folder.join("anime.db"))?;
+    println!("creating database...");
+    let mut conn = Connection::open(anidb_folder.join("anime.db"))?;
 
     setup_db(&conn)?;
+    populate_db(&uncompressed_jsonpath, &mut conn)?;
 
     Ok(())
 }
