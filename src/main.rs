@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use ureq;
 use zstd;
 
-// TODO: add a season and year field to get current seasons anime
+// TODO: add a season and year field to get current seasons anime or at this point add every field it does not take that much space
 #[derive(Deserialize)]
 struct AnimeEntry {
     sources: Vec<String>,
