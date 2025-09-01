@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 use ureq;
 use zstd;
 
+// TODO: add a season and year field to get current seasons anime
 #[derive(Deserialize)]
 struct AnimeEntry {
     sources: Vec<String>,
@@ -60,6 +61,7 @@ fn populate_db(anime_jsonl: &PathBuf, conn: &mut Connection) -> Result<(), Box<d
 
     // TODO: - find a way to use prepare and transactions without a brrowing error
     //       - maybe prosess the alt titles so there are no duplecates
+    //       - maybe add the title from Anime to AnimeAltTitle so there is one place to look up
 
     let mut total_anime_added = 0;
 
