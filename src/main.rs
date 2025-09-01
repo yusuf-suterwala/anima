@@ -9,7 +9,8 @@ use std::path::{Path, PathBuf};
 use ureq;
 use zstd;
 
-// TODO: add a season and year field to get current seasons anime or at this point add every field it does not take that much space
+// TODO: - add the ability to get crrent/next seasons anime useing anilist/anichart sorted by populerity
+//       - use anilist to get synopsis + populerity
 #[derive(Deserialize)]
 struct AnimeEntry {
     sources: Vec<String>,
