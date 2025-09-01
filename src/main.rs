@@ -3,7 +3,7 @@ use serde::Deserialize;
 use serde_json;
 use std::env;
 use std::error::Error;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::{self, BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use ureq;
@@ -105,26 +105,52 @@ fn populate_db(anime_jsonl: &PathBuf, conn: &mut Connection) -> Result<(), Box<d
     Ok(())
 }
 
+fn make_db(anidb_folder: &Path) -> Result<(), Box<dyn Error>> {
+    let anidb_temp_folder = anidb_folder.join("temp");
+    let compressed_jsonlpath = anidb_temp_folder.join("anime-offline-database.jsonl.zst");
+    let uncompressed_jsonpath = anidb_temp_folder.join("anime-offline-database.jsonl");
+    let anidb_db_path = anidb_folder.join("anime.db");
+
+    println!("folder cleanup...");
+    fs::remove_file(&anidb_db_path)?;
+    fs::create_dir(&anidb_temp_folder)?;
+
+    download_jsonl(&compressed_jsonlpath)?;
+    extract_jsonl(&compressed_jsonlpath, &uncompressed_jsonpath)?;
+
+    println!("creating database...");
+    let mut conn = Connection::open(&anidb_db_path)?;
+
+    setup_db(&conn)?;
+    populate_db(&uncompressed_jsonpath, &mut conn)?;
+
+    println!("temp cleanup...");
+    fs::remove_dir_all(&anidb_temp_folder)?;
+
+    Ok(())
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let anidb_foldername = env::var("ANIDB_FOLDER")
         .expect("set ANIDB_FOLDER env var")
         .to_string();
     let anidb_folder = Path::new(&anidb_foldername);
 
-    let anidb_temp_folder = anidb_folder.join("temp");
+    let args: Vec<String> = env::args().collect();
 
-    let compressed_jsonlpath = anidb_temp_folder.join("anime-offline-database.jsonl.zst");
-
-    let uncompressed_jsonpath = anidb_temp_folder.join("anime-offline-database.jsonl");
-
-    download_jsonl(&compressed_jsonlpath)?;
-    extract_jsonl(&compressed_jsonlpath, &uncompressed_jsonpath)?;
-
-    println!("creating database...");
-    let mut conn = Connection::open(anidb_folder.join("anime.db"))?;
-
-    setup_db(&conn)?;
-    populate_db(&uncompressed_jsonpath, &mut conn)?;
+    match args.get(1) {
+        Some(command) => match command.as_str() {
+            "build" => {
+                make_db(anidb_folder)?;
+            }
+            _ => {
+                eprintln!("unknown command entered")
+            }
+        },
+        None => {
+            eprintln!("no command entered")
+        }
+    }
 
     Ok(())
 }
