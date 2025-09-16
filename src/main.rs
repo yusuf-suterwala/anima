@@ -3,8 +3,9 @@ use std::error::Error;
 use std::path::Path;
 
 mod anime_db;
+mod anime_list;
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() {
     let anidb_foldername = env::var("ANIDB_FOLDER")
         .expect("set ANIDB_FOLDER env var")
         .to_string();
@@ -14,9 +15,22 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match args.get(1) {
         Some(command) => match command.as_str() {
-            "build" => {
-                anime_db::make_db(anidb_folder)?;
+            "create" => {
+                anime_db::make_db(&anidb_folder).unwrap();
             }
+            "list" => match args.get(2) {
+                Some(subcommand) => match subcommand.as_str() {
+                    "update" => {
+                        anime_list::update_anime_entry(&anidb_folder, 1, None).unwrap();
+                    }
+                    _ => {
+                        eprintln!("subcommand not found")
+                    }
+                },
+                None => {
+                    todo!()
+                }
+            },
             _ => {
                 eprintln!("unknown command entered")
             }
@@ -25,6 +39,4 @@ fn main() -> Result<(), Box<dyn Error>> {
             eprintln!("no command entered")
         }
     }
-
-    Ok(())
 }
