@@ -8,6 +8,10 @@ ureq = "3.1.0"
 zstd = "0.13.3"
 serde_json = "1.0"
 
+[dependencies.pico-args]
+version = "0.5.0"
+default-features = false
+
 [dependencies.serde]
 version = "1.0"
 features = ["derive"]

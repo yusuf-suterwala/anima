@@ -1,7 +1,12 @@
 use rusqlite::{self, Connection};
-use std::path::{Path, PathBuf};
+use std::{
+    error::Error,
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
-enum AnimeInfoStatus {
+#[derive(Debug)]
+pub enum AnimeInfoStatus {
     Complated,
     Watching,
     Paused,
@@ -9,26 +14,64 @@ enum AnimeInfoStatus {
     Planning,
 }
 
-// why does rust not have something like this by defulat?
-type Decimal = (u32, u32);
+impl FromStr for AnimeInfoStatus {
+    type Err = Box<dyn Error>;
 
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "COMPLATED" => Ok(Self::Complated),
+            "WATCHING" => Ok(Self::Watching),
+            "PAUSED" => Ok(Self::Paused),
+            "DROPED" => Ok(Self::Droped),
+            "PLANING" => Ok(Self::Planning),
+            _ => {
+                panic!("ERROR: unknown status inputed");
+            }
+        }
+    }
+}
+
+// why does rust not have something like this by defulat?
+#[derive(Debug)]
+pub struct Decimal {
+    full: u32,
+    frac: u32,
+}
+
+impl FromStr for Decimal {
+    type Err = Box<dyn Error>;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (full, frac) = s.split_once(".").ok_or("unknown value as score")?;
+        let num_full = str::parse(full)?;
+        let num_frac = str::parse(frac)?;
+        Ok(Self {
+            full: num_full,
+            frac: num_frac,
+        })
+    }
+}
+
+#[derive(Debug)]
 pub struct AnimeInfo {
-    status: Option<AnimeInfoStatus>,
-    episodes_completed: Option<u32>,
-    score: Option<Decimal>,
-    started_timestamp: Option<u32>,
-    complated_timestamp: Option<u32>,
+    pub status: Option<AnimeInfoStatus>,
+    pub episodes_completed: Option<u32>,
+    pub score: Option<Decimal>,
+    pub started_timestamp: Option<u32>,
+    pub complated_timestamp: Option<u32>,
 }
 
 pub fn update_anime_entry(
-    anime_db_path: &Path,
+    anime_db_folder: &Path,
     mal_id: u32,
     updated_info: Option<AnimeInfo>,
 ) -> rusqlite::Result<()> {
-    let anime_list_path = anime_db_path.join("anime_list.db");
+    let anime_list_path = anime_db_folder.join("anime_list.db");
     let conn = Connection::open(anime_list_path)?;
     if !conn.table_exists(None, "AnimeList")? {
         conn.execute(include_str!("./sql/anime_list_schema.sql"), ())?;
     }
-    Ok(())
+    dbg!(mal_id);
+    dbg!(updated_info);
+    todo!()
 }
