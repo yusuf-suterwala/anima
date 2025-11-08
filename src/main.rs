@@ -35,7 +35,7 @@ fn main() {
                 complated_timestamp,
             };
 
-            let _ = anime_list::update_anime_entry(anidb_folder, 0, Some(info));
+            let _ = anime_list::update_anime_entry(anidb_folder, 0, info);
         }
         Some(_) => {
             eprintln!("ERROR: unknown subcommand");

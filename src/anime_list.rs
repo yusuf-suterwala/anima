@@ -1,4 +1,4 @@
-use rusqlite::{self, Connection};
+use rusqlite::{self, Connection, ToSql, params};
 use std::{
     error::Error,
     path::{Path, PathBuf},
@@ -28,6 +28,19 @@ impl FromStr for AnimeInfoStatus {
                 panic!("ERROR: unknown status inputed");
             }
         }
+    }
+}
+
+impl ToSql for AnimeInfoStatus {
+    fn to_sql(&self) -> rusqlite::Result<rusqlite::types::ToSqlOutput<'_>> {
+        let staus = match &self {
+            Self::Complated => "COMPLATED",
+            Self::Watching => "WATCHING",
+            Self::Paused => "PAUSED",
+            Self::Droped => "DROPED",
+            Self::Planning => "PLANING",
+        };
+        staus.to_sql()
     }
 }
 
@@ -64,14 +77,33 @@ pub struct AnimeInfo {
 pub fn update_anime_entry(
     anime_db_folder: &Path,
     mal_id: u32,
-    updated_info: Option<AnimeInfo>,
+    updated_info: AnimeInfo,
 ) -> rusqlite::Result<()> {
     let anime_list_path = anime_db_folder.join("anime_list.db");
     let conn = Connection::open(anime_list_path)?;
     if !conn.table_exists(None, "AnimeList")? {
         conn.execute(include_str!("./sql/anime_list_schema.sql"), ())?;
     }
-    dbg!(mal_id);
-    dbg!(updated_info);
-    todo!()
+    let is_anime_in_list: u32 = conn.query_one(
+        "SELECT EXISTS(SELECT 1 FROM AnimeList WHERE mal_id = ?1 LIMIT 1)
+",
+        [mal_id],
+        |row| row.get(0),
+    )?;
+    if is_anime_in_list != 0 {
+        print!("anime exists")
+    } else {
+        if let (Some(status), Some(episodes_comp)) =
+            (updated_info.status, updated_info.episodes_completed)
+        {
+            // FIXME: for some god knows reason inserting sliently fails
+            conn.execute(
+                "INSERT INTO AnimeList (mal_id, status, episode_completed) VALUES (?1, ?2, ?3)",
+                params![mal_id, status, episodes_comp],
+            )?;
+        } else {
+            eprint!("adding a anime requires status and episode complated")
+        }
+    }
+    Ok(())
 }
