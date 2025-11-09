@@ -23,7 +23,7 @@ impl FromStr for AnimeInfoStatus {
             "WATCHING" => Ok(Self::Watching),
             "PAUSED" => Ok(Self::Paused),
             "DROPED" => Ok(Self::Droped),
-            "PLANING" => Ok(Self::Planning),
+            "PLANNING" => Ok(Self::Planning),
             _ => {
                 panic!("ERROR: unknown status inputed");
             }
@@ -38,7 +38,7 @@ impl ToSql for AnimeInfoStatus {
             Self::Watching => "WATCHING",
             Self::Paused => "PAUSED",
             Self::Droped => "DROPED",
-            Self::Planning => "PLANING",
+            Self::Planning => "PLANNING",
         };
         staus.to_sql()
     }
@@ -96,9 +96,8 @@ pub fn update_anime_entry(
         if let (Some(status), Some(episodes_comp)) =
             (updated_info.status, updated_info.episodes_completed)
         {
-            // FIXME: for some god knows reason inserting sliently fails
             conn.execute(
-                "INSERT INTO AnimeList (mal_id, status, episode_completed) VALUES (?1, ?2, ?3)",
+                "INSERT INTO AnimeList (mal_id, status, episodes_completed) VALUES (?1, ?2, ?3)",
                 params![mal_id, status, episodes_comp],
             )?;
         } else {
