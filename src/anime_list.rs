@@ -65,6 +65,14 @@ impl FromStr for Decimal {
     }
 }
 
+// ToSql was being a lemon with the lifetimes so i just did not bother
+impl ToString for Decimal {
+    fn to_string(&self) -> String {
+        format!("{}.{}", &self.full.to_string(), &self.frac.to_string())
+    }
+}
+
+// TODO: add the abillity to assgin nill to colums
 #[derive(Debug)]
 pub struct AnimeInfo {
     pub status: Option<AnimeInfoStatus>,
@@ -80,7 +88,7 @@ pub fn update_anime_entry(
     updated_info: AnimeInfo,
 ) -> rusqlite::Result<()> {
     let anime_list_path = anime_db_folder.join("anime_list.db");
-    let conn = Connection::open(anime_list_path)?;
+    let mut conn = Connection::open(anime_list_path)?;
     if !conn.table_exists(None, "AnimeList")? {
         conn.execute(include_str!("./sql/anime_list_schema.sql"), ())?;
     }
@@ -91,7 +99,38 @@ pub fn update_anime_entry(
         |row| row.get(0),
     )?;
     if is_anime_in_list != 0 {
-        print!("anime exists")
+        let trans = conn.transaction()?;
+        if let Some(status) = updated_info.status {
+            trans.execute(
+                "UPDATE AnimeList SET status = ?1 WHERE mal_id = ?2",
+                params![status, mal_id],
+            )?;
+        }
+        if let Some(score) = updated_info.score {
+            trans.execute(
+                "UPDATE AnimeList SET score = ?1 WHERE mal_id = ?2",
+                params![score.to_string(), mal_id],
+            )?;
+        }
+        if let Some(ep) = updated_info.episodes_completed {
+            trans.execute(
+                "UPDATE AnimeList SET episodes_completed = ?1 WHERE mal_id = ?2",
+                params![ep, mal_id],
+            )?;
+        }
+        if let Some(start_ts) = updated_info.started_timestamp {
+            trans.execute(
+                "UPDATE AnimeList SET started_timestamp = ?1 WHERE mal_id = ?2",
+                params![start_ts, mal_id],
+            )?;
+        }
+        if let Some(comp_ts) = updated_info.complated_timestamp {
+            trans.execute(
+                "UPDATE AnimeList SET complated_timestamp = ?1 WHERE mal_id = ?2",
+                params![comp_ts, mal_id],
+            )?;
+        }
+        trans.commit()?;
     } else {
         if let (Some(status), Some(episodes_comp)) =
             (updated_info.status, updated_info.episodes_completed)

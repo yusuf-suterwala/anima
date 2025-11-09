@@ -26,6 +26,7 @@ fn main() {
             let score = args.opt_value_from_str("--score").unwrap();
             let started_timestamp = args.opt_value_from_str("--started-ts").unwrap();
             let complated_timestamp = args.opt_value_from_str("--complated-ts").unwrap();
+            let mal_id = args.free_from_str().unwrap();
 
             let info = AnimeInfo {
                 status,
@@ -35,7 +36,7 @@ fn main() {
                 complated_timestamp,
             };
 
-            anime_list::update_anime_entry(anidb_folder, 0, info).unwrap();
+            anime_list::update_anime_entry(anidb_folder, mal_id, info).unwrap();
         }
         Some(_) => {
             eprintln!("ERROR: unknown subcommand");
