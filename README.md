@@ -7,6 +7,9 @@ a cli app that tracks you anime progress and wishlists **locally**, it uses modi
 ## Download
 nightly builds for [windows](https://nightly.link/yusuf-suterwala/anima/workflows/build/main/windows-debug-build.zip) and [linux](https://nightly.link/yusuf-suterwala/anima/workflows/build/main/linux-debug-build.zip)
 
+## Setup
+set the `ANIDB_FOLDER` environment variable to any folder you want the anime list and database to be stored
+
 ## Usage
 ### for creating the local anime bd
 
