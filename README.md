@@ -11,7 +11,7 @@ nightly builds for [windows](https://nightly.link/yusuf-suterwala/anima/workflow
 set the `ANIDB_FOLDER` environment variable to any folder you want the anime list and database to be stored
 
 ## Usage
-### for creating the local anime bd
+### for creating the local anime db
 
 ```anima create```
 
