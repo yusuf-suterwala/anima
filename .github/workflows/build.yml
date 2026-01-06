@@ -35,3 +35,4 @@ jobs:
       with:
         name: linux-debug-build
         path: target/debug/anima
+
