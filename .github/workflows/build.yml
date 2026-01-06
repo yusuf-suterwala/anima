@@ -23,6 +23,7 @@ jobs:
     - run: cargo build
     - uses: actions/upload-artifact@v4
       with:
+        name: windows-debug-build
         path: target/debug/anima.exe
   build-linux:
     runs-on: ubuntu-latest
@@ -32,4 +33,5 @@ jobs:
     - run: cargo build
     - uses: actions/upload-artifact@v4
       with:
+        name: linux-debug-build
         path: target/debug/anima
