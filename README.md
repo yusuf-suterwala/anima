@@ -4,6 +4,9 @@
 # Anima
 a cli app that tracks you anime progress and wishlists **locally**, it uses modifyed data from [manami-project/anime-offline-database](https://github.com/manami-project/anime-offline-database)
 
+## Download
+nightly builds for [windows](https://nightly.link/yusuf-suterwala/anima/workflows/build/main/windows-debug-build.zip) and [linux](https://nightly.link/yusuf-suterwala/anima/workflows/build/main/linux-debug-build.zip)
+
 ## Usage
 ### for creating the local anime bd
 
